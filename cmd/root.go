@@ -4,7 +4,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -37,7 +37,7 @@ var (
 		Version: version,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			if !debug {
-				log.SetOutput(ioutil.Discard)
+				log.SetOutput(io.Discard)
 			}
 			util.DoIf(Verbose, func() {
 				fmt.Println()
