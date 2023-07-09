@@ -8,22 +8,61 @@ import (
 )
 
 func TestGenerate(t *testing.T) {
-	afs := &afero.Afero{Fs: afero.NewMemMapFs()}
-
-	afs.Create("go.mod")
-	afs.Create("requirements.txt")
-
-	rebaseStrategy := ""
-	schedule := Schedule{
-		Interval: "daily",
-		Time:     "",
-		TimeZone: "",
+	tests := map[string]struct {
+		schedule       func() Schedule
+		rebaseStrategy string
+		configChecker  func(config Configuration) bool
+	}{
+		"A default generate": {
+			schedule: func() Schedule {
+				return Schedule{
+					Interval: "daily",
+					Time:     "",
+					TimeZone: "",
+				}
+			},
+			rebaseStrategy: "",
+			configChecker:  func(config Configuration) bool { return true },
+		},
+		"A default generate, with rebase strategy disabled": {
+			schedule: func() Schedule {
+				return Schedule{
+					Interval: "daily",
+					Time:     "",
+					TimeZone: "",
+				}
+			},
+			rebaseStrategy: "disabled",
+			configChecker: func(config Configuration) bool {
+				for _, c := range config.Updates {
+					if c.RebaseStrategy != "disabled" {
+						return false
+					}
+				}
+				return true
+			},
+		},
 	}
-	config, err := Generate(afs, ".", rebaseStrategy, schedule)
-	assert.NoError(t, err)
-	assert.Equal(t, 2, config.Version)
-	assert.Len(t, config.Updates, 2)
-	assert.NotNil(t, config)
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			afs := &afero.Afero{Fs: afero.NewMemMapFs()}
+
+			_, err := afs.Create("go.mod")
+			assert.NoError(err)
+			_, err = afs.Create("requirements.txt")
+			assert.NoError(err)
+
+			config, err := Generate(afs, ".", test.rebaseStrategy, test.schedule())
+			assert.NoError(err)
+			assert.Equal(2, config.Version)
+			assert.Len(config.Updates, 2)
+			assert.NotNil(config)
+			assert.True(test.configChecker(config))
+		})
+	}
 }
 
 func TestDirectoryParserGitHub(t *testing.T) {
