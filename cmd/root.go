@@ -19,7 +19,7 @@ import (
 )
 
 var (
-	version = "1.0.1"
+	version = "2.0.3"
 	//Afs stores a global OS Filesystem that is used throughout hinge
 	Afs = &afero.Afero{Fs: afero.NewOsFs()}
 	//Verbose determines if the execution of hing should output verbose information
@@ -106,14 +106,9 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&rebaseStrategy, "rebase-strategy", "s", "disable", "Dependabot automatically rebases open pull requests when it detects any changes to the pull request")
 }
 
-func buildRebaseStrategy() (rebaseStrategy string) {
-	switch {
-	case rebaseStrategy == "auto":
-		return ""
-	case rebaseStrategy == "":
-		return ""
-	case rebaseStrategy == "disable":
-		return "disable"
+func buildRebaseStrategy() string {
+	if rebaseStrategy == "disabled" {
+		return "disabled"
 	}
 
 	return ""
